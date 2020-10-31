@@ -156,15 +156,10 @@ package ariane_pkg;
     localparam int unsigned DEPTH_COMMIT = 8;
 `endif
 
-`ifdef PITON_ARIANE
     // Floating-point extensions configuration
-    localparam bit RVF = riscv::IS_XLEN64; // Is F extension enabled
-    localparam bit RVD = riscv::IS_XLEN64; // Is D extension enabled
-`else
-    // Floating-point extensions configuration
-    localparam bit RVF = riscv::IS_XLEN64; // Is F extension enabled
-    localparam bit RVD = riscv::IS_XLEN64; // Is D extension enabled
-`endif
+    localparam bit RVF = 1'b0; // Is F extension enabled
+    localparam bit RVD = 1'b0; // Is D extension enabled
+
     localparam bit RVA = 1'b1; // Is A extension enabled
 
     // Transprecision floating-point extensions configuration
