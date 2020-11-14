@@ -77,7 +77,7 @@ generate
           .OUT_REGS (0),
           // this initializes the memory with 0es. adjust to taste...
           // 0: no init, 1: zero init, 2: random init, 3: deadbeef init
-          .SIM_INIT (1)
+          .SIM_INIT (0)
         ) i_ram (
            .Clk_CI    ( clk_i                     ),
            .Rst_RBI   ( rst_ni                    ),
