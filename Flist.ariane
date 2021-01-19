@@ -79,6 +79,7 @@ src/tech_cells_generic/src/pulp_clock_mux2.sv
 src/axi_adapter.sv
 src/alu.sv
 src/fpu_wrap.sv
+src/vproc_wrap.sv
 src/ariane.sv
 src/branch_unit.sv
 src/compressed_decoder.sv

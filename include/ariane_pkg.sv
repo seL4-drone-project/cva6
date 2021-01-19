@@ -595,6 +595,7 @@ package ariane_pkg;
                                                  // for unfinished floating-point that are partly encoded in rs2, this field also holds rs2
                                                  // for unfinished floating-point fused operations (FMADD, FMSUB, FNMADD, FNMSUB)
                                                  // this field holds the address of the third operand from the floating-point register file
+                                                 // this field holds the instruction word for vector instructions
         logic                     valid;         // is the result valid
         logic                     use_imm;       // should we use the immediate as operand b?
         logic                     use_zimm;      // use zimm as operand a

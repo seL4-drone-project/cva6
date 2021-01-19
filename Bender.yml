@@ -47,6 +47,7 @@ sources:
     - src/store_unit.sv
     - src/axi_adapter.sv
     - src/fpu_wrap.sv
+    - src/vproc_wrap.sv
     - src/csr_regfile.sv
     - src/commit_stage.sv
     - src/alu.sv

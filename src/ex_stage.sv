@@ -234,35 +234,49 @@ module ex_stage import ariane_pkg::*; #(
     // ----------------
     // FPU
     // ----------------
-    generate
-        if (FP_PRESENT) begin : fpu_gen
-            fu_data_t fpu_data;
-            assign fpu_data  = fpu_valid_i ? fu_data_i  : '0;
-
-            fpu_wrap fpu_i (
-                .clk_i,
-                .rst_ni,
-                .flush_i,
-                .fpu_valid_i,
-                .fpu_ready_o,
-                .fu_data_i ( fpu_data ),
-                .fpu_fmt_i,
-                .fpu_rm_i,
-                .fpu_frm_i,
-                .fpu_prec_i,
-                .fpu_trans_id_o,
-                .result_o ( fpu_result_o ),
-                .fpu_valid_o,
-                .fpu_exception_o
-            );
-        end else begin : no_fpu_gen
-            assign fpu_ready_o     = '0;
-            assign fpu_trans_id_o  = '0;
-            assign fpu_result_o    = '0;
-            assign fpu_valid_o     = '0;
-            assign fpu_exception_o = '0;
-        end
-    endgenerate
+    //generate
+    //    if (FP_PRESENT) begin : fpu_gen
+    //        fu_data_t fpu_data;
+    //        assign fpu_data  = fpu_valid_i ? fu_data_i  : '0;
+    //
+    //        fpu_wrap fpu_i (
+    //            .clk_i,
+    //            .rst_ni,
+    //            .flush_i,
+    //            .fpu_valid_i,
+    //            .fpu_ready_o,
+    //            .fu_data_i ( fpu_data ),
+    //            .fpu_fmt_i,
+    //            .fpu_rm_i,
+    //            .fpu_frm_i,
+    //            .fpu_prec_i,
+    //            .fpu_trans_id_o,
+    //            .result_o ( fpu_result_o ),
+    //            .fpu_valid_o,
+    //            .fpu_exception_o
+    //        );
+    //    end else begin : no_fpu_gen
+    //        assign fpu_ready_o     = '0;
+    //        assign fpu_trans_id_o  = '0;
+    //        assign fpu_result_o    = '0;
+    //        assign fpu_valid_o     = '0;
+    //        assign fpu_exception_o = '0;
+    //    end
+    //endgenerate
+    vproc_wrap vproc_i (
+        .clk_i,
+        .rst_ni,
+        .vect_ready_o     ( fpu_ready_o         ),
+        .instr_valid_i    ( fpu_valid_i         ),
+        .trans_id_i       ( fu_data_i.trans_id  ),
+        .instr_i          ( fu_data_i.imm       ),
+        .x_rs1_i          ( fu_data_i.operand_a ),
+        .x_rs2_i          ( fu_data_i.operand_b ),
+        .vect_valid_o     ( fpu_valid_o         ),
+        .vect_trans_id_o  ( fpu_trans_id_o      ),
+        .vect_result_o    ( fpu_result_o        )
+    );
+    assign fpu_exception_o = '0;
 
     // ----------------
     // Load-Store Unit

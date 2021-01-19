@@ -54,7 +54,7 @@ module decoder import ariane_pkg::*; (
     // Immediate select
     // --------------------
     enum logic[3:0] {
-        NOIMM, IIMM, SIMM, SBIMM, UIMM, JIMM, RS3
+        NOIMM, IIMM, SIMM, SBIMM, UIMM, JIMM, RS3, VINSTR
     } imm_select;
 
     riscv::xlen_t imm_i_type;
@@ -640,7 +640,7 @@ module decoder import ariane_pkg::*; (
                 end
 
                 // --------------------------------
-                // Floating-Point Load/store
+                // Floating-Point/Vector Load/store
                 // --------------------------------
                 riscv::OpcodeStoreFp: begin
                     if (FP_PRESENT && fs_i != riscv::Off) begin // only generate decoder if FP extensions are enabled (static)
@@ -663,6 +663,21 @@ module decoder import ariane_pkg::*; (
                         endcase
                     end else
                         illegal_instr = 1'b1;
+
+                    // vector stores
+                    unique case (instr.itype.funct3)
+                        // note: there is a collision with the non-standardized 8-bit floating-point load/store
+                        3'b000, 3'b101, 3'b110, 3'b111: begin
+                            instruction_o.fu  = FPU;
+                            instruction_o.op  = ariane_pkg::ADD; // required for XREG access (to avoid FREGs)
+                            instruction_o.rs1 = instr.rtype.rs1;
+                            instruction_o.rs2 = (instr.instr[27:26] == 2'b10) ? instr.rtype.rs2 : '0;
+                            imm_select        = VINSTR; // instruction word into result field
+                            illegal_instr     = 1'b0;
+                        end
+                        default: begin
+                        end
+                    endcase
                 end
 
                 riscv::OpcodeLoadFp: begin
@@ -686,6 +701,49 @@ module decoder import ariane_pkg::*; (
                         endcase
                     end else
                         illegal_instr = 1'b1;
+
+                    // vector loads
+                    unique case (instr.itype.funct3)
+                        // note: there is a collision with the non-standardized 8-bit floating-point load/store
+                        3'b000, 3'b101, 3'b110, 3'b111: begin
+                            instruction_o.fu  = FPU;
+                            instruction_o.op  = ariane_pkg::ADD; // required for XREG access (to avoid FREGs)
+                            instruction_o.rs1 = instr.rtype.rs1;
+                            instruction_o.rs2 = (instr.instr[27:26] == 2'b10) ? instr.rtype.rs2 : '0;
+                            imm_select        = VINSTR; // instruction word into result field
+                            illegal_instr     = 1'b0;
+                        end
+                        default: begin
+                        end
+                    endcase
+                end
+
+                // --------------------------------------------
+                // Vector Arithmetic & Configuration Operations
+                // --------------------------------------------
+                riscv::OpcodeRsrvd1: begin
+                    instruction_o.fu  = FPU;
+                    instruction_o.op  = ariane_pkg::ADD; // required for XREG access (to avoid FREGs)
+                    imm_select        = VINSTR; // instruction word into result field
+
+                    // vector arithmetic operations of type OPIVX, OPFVF and OPMVX
+                    // as well as vector configuration instructions read rs1 from an XREG
+                    unique case (instr.rtype.funct3)
+                        3'b100, 3'b101, 3'b110, 3'b111: instruction_o.rs1 = instr.rtype.rs1;
+                        default:                        instruction_o.rs1 = '0;
+                    endcase
+
+                    // vector configuration instruction write-back to an XREG
+                    if (instr.rtype.funct3 == 3'b111) begin
+                        instruction_o.rd = instr.rtype.rd;
+
+                        // vsetvl (indicated by bit 31 set) reads rs2 from an XREG
+                        instruction_o.rs2 = instr.instr[31] ? instr.rtype.rs2 : '0;
+                    end
+                    // some vector arithmetic instructions write-back to an XREG
+                    else if ((instr.rtype.funct3 == 3'b010) & (instr.instr[31:26] == 6'b010000)) begin
+                        instruction_o.rd = instr.rtype.rd;
+                    end
                 end
 
                 // ----------------------------------
@@ -1045,6 +1103,11 @@ module decoder import ariane_pkg::*; (
             RS3: begin
                 // result holds address of fp operand rs3
                 instruction_o.result = {{riscv::XLEN-5{1'b0}}, instr.r4type.rs3};
+                instruction_o.use_imm = 1'b0;
+            end
+            VINSTR: begin
+                // result holds instruction word for vector instructions
+                instruction_o.result = instruction_i;
                 instruction_o.use_imm = 1'b0;
             end
             default: begin
