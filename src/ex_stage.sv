@@ -16,6 +16,7 @@
 
 module ex_stage import ariane_pkg::*; #(
     parameter int unsigned ASID_WIDTH = 1,
+    parameter int unsigned VMEM_W     = 128,
     parameter ariane_pkg::ariane_cfg_t ArianeCfg = ariane_pkg::ArianeDefaultConfig
 ) (
     input  logic                                   clk_i,    // Clock
@@ -105,7 +106,18 @@ module ex_stage import ariane_pkg::*; #(
     output logic                                   dtlb_miss_o,
     // PMPs
     input  riscv::pmpcfg_t [15:0]                  pmpcfg_i,
-    input  logic[15:0][riscv::PLEN-3:0]            pmpaddr_i
+    input  logic[15:0][riscv::PLEN-3:0]            pmpaddr_i,
+
+    // vector core memory interface
+    output logic                                   vmem_req_o,
+    input  logic                                   vmem_gnt_i,
+    output logic [31:0]                            vmem_addr_o,
+    output logic                                   vmem_we_o,
+    output logic [VMEM_W/8-1:0]                    vmem_be_o,
+    output logic [VMEM_W-1:0]                      vmem_wdata_o,
+    input  logic                                   vmem_rvalid_i,
+    input  logic [VMEM_W-1:0]                      vmem_rdata_i,
+    input  logic                                   vmem_err_i
 );
 
     // -------------------------
@@ -263,7 +275,9 @@ module ex_stage import ariane_pkg::*; #(
     //        assign fpu_exception_o = '0;
     //    end
     //endgenerate
-    vproc_wrap vproc_i (
+    vproc_wrap #(
+        .VMEM_W           ( VMEM_W              )
+    ) vproc_i (
         .clk_i,
         .rst_ni,
         .vect_ready_o     ( fpu_ready_o         ),
@@ -274,7 +288,16 @@ module ex_stage import ariane_pkg::*; #(
         .x_rs2_i          ( fu_data_i.operand_b ),
         .vect_valid_o     ( fpu_valid_o         ),
         .vect_trans_id_o  ( fpu_trans_id_o      ),
-        .vect_result_o    ( fpu_result_o        )
+        .vect_result_o    ( fpu_result_o        ),
+        .vmem_req_o       ( vmem_req_o          ),
+        .vmem_gnt_i       ( vmem_gnt_i          ),
+        .vmem_addr_o      ( vmem_addr_o         ),
+        .vmem_we_o        ( vmem_we_o           ),
+        .vmem_be_o        ( vmem_be_o           ),
+        .vmem_wdata_o     ( vmem_wdata_o        ),
+        .vmem_rvalid_i    ( vmem_rvalid_i       ),
+        .vmem_rdata_i     ( vmem_rdata_i        ),
+        .vmem_err_i       ( vmem_err_i          )
     );
     assign fpu_exception_o = '0;
 
@@ -334,10 +357,10 @@ module ex_stage import ariane_pkg::*; #(
     );
 
 
-	always_ff @(posedge clk_i or negedge rst_ni) begin
-	    if (~rst_ni) begin
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
           current_instruction_is_sfence_vma <= 1'b0;
-		  end else begin
+          end else begin
           if (flush_i) begin
               current_instruction_is_sfence_vma <= 1'b0;
           end else if ((fu_data_i.operator == SFENCE_VMA) && csr_valid_i) begin
@@ -347,15 +370,15 @@ module ex_stage import ariane_pkg::*; #(
   end
 
   // This process stores the rs1 and rs2 parameters of a SFENCE_VMA instruction.
-	always_ff @(posedge clk_i or negedge rst_ni) begin
-		if (~rst_ni) begin
-		    asid_to_be_flushed  <= '0;
-			  vaddr_to_be_flushed <=  '0;
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni) begin
+            asid_to_be_flushed  <= '0;
+              vaddr_to_be_flushed <=  '0;
     // if the current instruction in EX_STAGE is a sfence.vma, in the next cycle no writes will happen
-		end else if ((~current_instruction_is_sfence_vma) && (~((fu_data_i.operator == SFENCE_VMA) && csr_valid_i))) begin
-			  vaddr_to_be_flushed <=  rs1_forwarding_i;
-			  asid_to_be_flushed  <= rs2_forwarding_i[ASID_WIDTH-1:0];
-		end
-	end
+        end else if ((~current_instruction_is_sfence_vma) && (~((fu_data_i.operator == SFENCE_VMA) && csr_valid_i))) begin
+              vaddr_to_be_flushed <=  rs1_forwarding_i;
+              asid_to_be_flushed  <= rs2_forwarding_i[ASID_WIDTH-1:0];
+        end
+    end
 
 endmodule

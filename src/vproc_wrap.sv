@@ -1,5 +1,7 @@
 
-module vproc_wrap import ariane_pkg::*; (
+module vproc_wrap import ariane_pkg::*; #(
+        parameter int unsigned VMEM_W     = 128
+    ) (
         input  logic                     clk_i,
         input  logic                     rst_ni,
 
@@ -11,7 +13,18 @@ module vproc_wrap import ariane_pkg::*; (
         input  logic [riscv::XLEN-1:0]   x_rs2_i,
         output logic                     vect_valid_o,
         output logic [TRANS_ID_BITS-1:0] vect_trans_id_o,
-        output logic [riscv::XLEN-1:0]   vect_result_o
+        output logic [riscv::XLEN-1:0]   vect_result_o,
+
+        // vector core memory interface
+    output logic                         vmem_req_o,
+    input  logic                         vmem_gnt_i,
+    output logic [31:0]                  vmem_addr_o,
+    output logic                         vmem_we_o,
+    output logic [VMEM_W/8-1:0]          vmem_be_o,
+    output logic [VMEM_W-1:0]            vmem_wdata_o,
+    input  logic                         vmem_rvalid_i,
+    input  logic [VMEM_W-1:0]            vmem_rdata_i,
+    input  logic                         vmem_err_i
     );
 
     logic                     instr_valid_q, instr_valid_d;
@@ -46,11 +59,11 @@ module vproc_wrap import ariane_pkg::*; (
     logic [31:0] rd;
 
     vproc_core #(
-        //.VREG_SZ          (                 ),
-        //.VMEM_SZ          (                 ),
-        //.MUL_OP_SZ        (                 ),
-        //.ALU_OP_SZ        (                 ),
-        //.SLD_OP_SZ        (                 )
+        .VREG_SZ          ( 256             ),
+        .VMEM_SZ          ( VMEM_W          ),
+        .MUL_OP_SZ        ( 128             ),
+        .ALU_OP_SZ        ( 64              ),
+        .SLD_OP_SZ        ( 128             )
     ) v_core (
         .clk_i            ( clk_i           ),
         .rst_ni           ( rst_ni          ),
@@ -73,15 +86,15 @@ module vproc_wrap import ariane_pkg::*; (
         .csr_vcsr_o       (                 ),
         .csr_vcsr_i       ( '0              ),
         .csr_vcsr_set_i   ( '0              ),
-        .data_req_o       (                 ),
-        .data_gnt_i       ( '0              ),
-        .data_rvalid_i    ( '0              ),
-        .data_err_i       ( '0              ),
-        .data_rdata_i     ( '0              ),
-        .data_addr_o      (                 ),
-        .data_we_o        (                 ),
-        .data_be_o        (                 ),
-        .data_wdata_o     (                 )
+        .data_req_o       ( vmem_req_o      ),
+        .data_gnt_i       ( vmem_gnt_i      ),
+        .data_rvalid_i    ( vmem_rvalid_i   ),
+        .data_err_i       ( vmem_err_i      ),
+        .data_rdata_i     ( vmem_rdata_i    ),
+        .data_addr_o      ( vmem_addr_o     ),
+        .data_we_o        ( vmem_we_o       ),
+        .data_be_o        ( vmem_be_o       ),
+        .data_wdata_o     ( vmem_wdata_o    )
     );
 
     always_comb begin

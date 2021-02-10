@@ -24,6 +24,7 @@ import "DPI-C" function void init_dromajo(string cfg_f_name);
 
 
 module ariane import ariane_pkg::*; #(
+  parameter int unsigned             VMEM_W        = 128,
   parameter ariane_pkg::ariane_cfg_t ArianeCfg     = ariane_pkg::ArianeDefaultConfig
 ) (
   input  logic                         clk_i,
@@ -45,12 +46,23 @@ module ariane import ariane_pkg::*; #(
 `ifdef PITON_ARIANE
   // L15 (memory side)
   output wt_cache_pkg::l15_req_t       l15_req_o,
-  input  wt_cache_pkg::l15_rtrn_t      l15_rtrn_i
+  input  wt_cache_pkg::l15_rtrn_t      l15_rtrn_i,
 `else
   // memory side, AXI Master
   output ariane_axi::req_t             axi_req_o,
-  input  ariane_axi::resp_t            axi_resp_i
+  input  ariane_axi::resp_t            axi_resp_i,
 `endif
+
+  // vector core memory interface
+  output logic                vmem_req_o,
+  input  logic                vmem_gnt_i,
+  output logic [31:0]         vmem_addr_o,
+  output logic                vmem_we_o,
+  output logic [VMEM_W/8-1:0] vmem_be_o,
+  output logic [VMEM_W-1:0]   vmem_wdata_o,
+  input  logic                vmem_rvalid_i,
+  input  logic [VMEM_W-1:0]   vmem_rdata_i,
+  input  logic                vmem_err_i
 );
 
   // ------------------------------------------
@@ -356,6 +368,7 @@ module ariane import ariane_pkg::*; #(
   // ---------
   ex_stage #(
     .ASID_WIDTH ( ASID_WIDTH ),
+    .VMEM_W     ( VMEM_W     ),
     .ArianeCfg  ( ArianeCfg  )
   ) ex_stage_i (
     .clk_i                  ( clk_i                       ),
@@ -440,7 +453,17 @@ module ariane import ariane_pkg::*; #(
     .dcache_wbuffer_not_ni_i ( dcache_commit_wbuffer_not_ni ),
     // PMP
     .pmpcfg_i               ( pmpcfg                      ),
-    .pmpaddr_i              ( pmpaddr                     )
+    .pmpaddr_i              ( pmpaddr                     ),
+
+    .vmem_req_o             ( vmem_req_o                  ),
+    .vmem_gnt_i             ( vmem_gnt_i                  ),
+    .vmem_addr_o            ( vmem_addr_o                 ),
+    .vmem_we_o              ( vmem_we_o                   ),
+    .vmem_be_o              ( vmem_be_o                   ),
+    .vmem_wdata_o           ( vmem_wdata_o                ),
+    .vmem_rvalid_i          ( vmem_rvalid_i               ),
+    .vmem_rdata_i           ( vmem_rdata_i                ),
+    .vmem_err_i             ( vmem_err_i                  )
   );
 
   // ---------
