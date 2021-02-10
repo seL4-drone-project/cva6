@@ -16,15 +16,15 @@ module vproc_wrap import ariane_pkg::*; #(
         output logic [riscv::XLEN-1:0]   vect_result_o,
 
         // vector core memory interface
-    output logic                         vmem_req_o,
-    input  logic                         vmem_gnt_i,
-    output logic [31:0]                  vmem_addr_o,
-    output logic                         vmem_we_o,
-    output logic [VMEM_W/8-1:0]          vmem_be_o,
-    output logic [VMEM_W-1:0]            vmem_wdata_o,
-    input  logic                         vmem_rvalid_i,
-    input  logic [VMEM_W-1:0]            vmem_rdata_i,
-    input  logic                         vmem_err_i
+        output logic                     vmem_req_o,
+        input  logic                     vmem_gnt_i,
+        output logic [31:0]              vmem_addr_o,
+        output logic                     vmem_we_o,
+        output logic [VMEM_W/8-1:0]      vmem_be_o,
+        output logic [VMEM_W-1:0]        vmem_wdata_o,
+        input  logic                     vmem_rvalid_i,
+        input  logic [VMEM_W-1:0]        vmem_rdata_i,
+        input  logic                     vmem_err_i
     );
 
     logic                     instr_valid_q, instr_valid_d;
