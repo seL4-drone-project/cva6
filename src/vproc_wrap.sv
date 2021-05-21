@@ -105,7 +105,7 @@ module vproc_wrap import ariane_pkg::*; #(
         x_rs2_d       = x_rs2_q;
         rd_wait_d     = rd_wait_q;
 
-        if (vect_ready_o & instr_valid_i) begin
+        if (instr_valid_i) begin
             instr_valid_d = 1'b1;
             trans_id_d    = trans_id_i;
             instr_d       = instr_i;
@@ -127,7 +127,7 @@ module vproc_wrap import ariane_pkg::*; #(
     logic instr_ack_no_wait;
     assign instr_ack_no_wait = instr_valid_q & instr_gnt & ~rd_wait;
 
-    assign vect_ready_o    = (~rd_wait_q | rd_valid) & (~instr_valid_q | instr_ack_no_wait);
+    assign vect_ready_o    = (~rd_wait_q | rd_valid) & (~instr_valid_q | instr_ack_no_wait) & ~instr_valid_i;
     assign vect_valid_o    = ( rd_wait_q & rd_valid) | instr_ack_no_wait;
     assign vect_trans_id_o = trans_id_q;
     assign vect_result_o   = rd;
