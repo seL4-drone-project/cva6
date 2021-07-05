@@ -63,7 +63,12 @@ module vproc_wrap import ariane_pkg::*; #(
         .VMEM_W           ( VMEM_W          ),
         .MUL_OP_W         ( 128             ),
         .ALU_OP_W         ( 64              ),
-        .SLD_OP_W         ( 128             )
+        .SLD_OP_W         ( 128             ),
+`ifdef VERILATOR
+        .RAM_TYPE         ( vproc_pkg::RAM_GENERIC     )
+`else
+        .RAM_TYPE         ( vproc_pkg::RAM_XLNX_RAM32M )
+`endif
     ) v_core (
         .clk_i            ( clk_i           ),
         .rst_ni           ( rst_ni          ),
